@@ -20,6 +20,7 @@ package org.apache.cordova.inappbrowser;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -79,6 +80,7 @@ import org.json.JSONObject;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -977,6 +979,9 @@ public class InAppBrowser extends CordovaPlugin {
                 settings.setJavaScriptCanOpenWindowsAutomatically(true);
                 settings.setBuiltInZoomControls(showZoomControls);
                 settings.setPluginState(android.webkit.WebSettings.PluginState.ON);
+                //이동재 21091212 본인인증 1.2.1 URL SCHEME 설정 {
+                settings.setDomStorageEnabled(true);
+                // }
 
                 // Add postMessage interface
                 class JsObject {
@@ -1241,7 +1246,41 @@ public class InAppBrowser extends CordovaPlugin {
                 }
             }
 
-            if (url.startsWith(WebView.SCHEME_TEL)) {
+            //이동재 21091212 본인인증 1.2.2 WebViewClient에 필요처리 추가
+            // shouldOverlideUrlLoading함수에서 URL 별 분기처리 { -----------------------------------
+
+            if (url.startsWith("intent://")) {
+                Intent intent = null;
+                try {
+                    intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                    if (intent != null) {
+                        //앱실행
+                        cordova.getActivity().startActivity(intent);
+                    }
+                } catch (URISyntaxException e) {
+                    //URI 문법 오류 시 처리 구간
+                } catch (ActivityNotFoundException e) {
+                    String packageName = intent.getPackage();
+                    if (!packageName.equals("")) {
+                        // 앱이 설치되어 있지 않을 경우 구글마켓 이동
+                        cordova.getActivity().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + packageName)));
+                    }
+                }
+                //return  값을 반드시 true로 해야 합니다.
+                override = true;
+            } else if (url.startsWith("https://play.google.com/store/apps/details?id=") || url.startsWith("market://details?id=")) {
+                //표준창 내 앱설치하기 버튼 클릭 시 PlayStore 앱으로 연결하기 위한 로직
+                Uri uri = Uri.parse(url);
+                String packageName = uri.getQueryParameter("id");
+                if (packageName != null && !packageName.equals("")) {
+                    // 구글마켓 이동
+                    cordova.getActivity().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + packageName)));
+                }
+                //return  값을 반드시 true로 해야 합니다.
+                override = true;
+            }
+            // { -----------------------------------------------------------------------
+            else if (url.startsWith(WebView.SCHEME_TEL)) {
                 try {
                     Intent intent = new Intent(Intent.ACTION_DIAL);
                     intent.setData(Uri.parse(url));
