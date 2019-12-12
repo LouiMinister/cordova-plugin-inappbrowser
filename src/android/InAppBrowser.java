@@ -979,7 +979,7 @@ public class InAppBrowser extends CordovaPlugin {
                 settings.setJavaScriptCanOpenWindowsAutomatically(true);
                 settings.setBuiltInZoomControls(showZoomControls);
                 settings.setPluginState(android.webkit.WebSettings.PluginState.ON);
-                //이동재 21091212 본인인증 1.2.1 URL SCHEME 설정 {
+                //이동재 21091212 본인인증 1.2.1 URL SCHEME 설정 {{
                 settings.setDomStorageEnabled(true);
                 // }
 
