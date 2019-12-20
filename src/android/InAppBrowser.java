@@ -87,6 +87,8 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.StringTokenizer;
 
+import com.example.authorize_web_handler.Test;
+
 @SuppressLint("SetJavaScriptEnabled")
 public class InAppBrowser extends CordovaPlugin {
 
@@ -981,7 +983,11 @@ public class InAppBrowser extends CordovaPlugin {
                 settings.setPluginState(android.webkit.WebSettings.PluginState.ON);
                 //이동재 21091212 본인인증 1.2.1 URL SCHEME 설정 {{
                 settings.setDomStorageEnabled(true);
-                inAppWebView.addJavascriptInterface(new Test(),"android");
+                inAppWebView.addJavascriptInterface(new Test(cordova.getActivity().getApplicationContext(),inAppWebView,cordova.getActivity()),"android");
+
+                // web 에서 app 호출 테스트
+                //inAppWebView.addJavascriptInterface(new Test(), "android");
+
                 // }
 
                 // Add postMessage interface
