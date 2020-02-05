@@ -20,12 +20,14 @@ package org.apache.cordova.inappbrowser;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.os.Environment;
 import android.os.Parcelable;
 import android.provider.Browser;
 import android.content.res.Resources;
@@ -49,8 +51,10 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
+import android.webkit.DownloadListener;
 import android.webkit.HttpAuthHandler;
 import android.webkit.JavascriptInterface;
+import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -64,6 +68,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.Config;
@@ -88,6 +93,8 @@ import java.util.HashMap;
 import java.util.StringTokenizer;
 
 import com.example.authorize_web_handler.Test;
+
+import static android.content.Context.DOWNLOAD_SERVICE;
 
 @SuppressLint("SetJavaScriptEnabled")
 public class InAppBrowser extends CordovaPlugin {
@@ -984,7 +991,27 @@ public class InAppBrowser extends CordovaPlugin {
                 //이동재 21091212 본인인증 1.2.1 URL SCHEME 설정 {{
                 settings.setDomStorageEnabled(true);
                 inAppWebView.addJavascriptInterface(new Test(cordova.getActivity().getApplicationContext(),inAppWebView,cordova.getActivity()),"android");
-
+                
+                inAppWebView.setDownloadListener(new DownloadListener() {
+                    @Override
+                    public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+                        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+                        request.setMimeType(mimeType);
+                        //------------------------COOKIE!!------------------------
+                        String cookies = CookieManager.getInstance().getCookie(url);
+                        request.addRequestHeader("cookie", cookies);
+                        //------------------------COOKIE!!------------------------
+                        request.addRequestHeader("User-Agent", userAgent);
+                        request.setDescription("파일 다운로드중...");
+                        request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType));
+                        request.allowScanningByMediaScanner();
+                        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimeType));
+                        DownloadManager dm = (DownloadManager) cordova.getActivity().getSystemService(DOWNLOAD_SERVICE);
+                        dm.enqueue(request);
+                        Toast.makeText(cordova.getActivity().getApplicationContext(), "Downloading File", Toast.LENGTH_LONG).show();
+                    }
+                });
                 // web 에서 app 호출 테스트
                 //inAppWebView.addJavascriptInterface(new Test(), "android");
 
